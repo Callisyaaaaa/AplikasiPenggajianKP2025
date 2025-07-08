@@ -10,7 +10,7 @@
         @csrf
 
         {{-- Pilih Pegawai --}}
-        <div class="mb-3">
+        <div class="mb-3 col-md-6">
             <label for="pegawai" class="form-label"> Pilih Pegawai </label>
             <select id="pegawai" name="pegawai_id" class="form-select" required>
                 <option value="" selected>Pilih Pegawai</option>
@@ -25,24 +25,13 @@
         </div>
 
         <!-- Gaji Pokok -->
-        <div class="mb-3">
+        <div class="mb-3 col-md-6">
             <label for="gaji_pokok" class="form-label">Gaji Pokok</label>
-            <input type="number" id="gaji_pokok" class="form-control" readonly>
+            <input type="text" id="gaji_pokok" class="form-control" readonly>
         </div>
-
-        <script>
-            document.getElementById('pegawai').addEventListener('change', function () {
-                const gaji = this.options[this.selectedIndex].getAttribute('data-gaji') || 0;
-                document.getElementById('gaji_pokok').value = gaji;
-            });
-
-            @isset($pegawai)
-                document.getElementById('gaji_pokok').value = {{ $pegawai->gaji }};
-            @endisset
-        </script>
-
+        
         {{-- Pilih Bulan --}}
-        <div class="mb-3">
+        <div class="mb-3 col-md-6">
             <label for="bulan" class="form-label">Pilih Bulan</label>
             <input type="month" id="bulan" name="bulan" class="form-control @error('bulan') is-invalid @enderror" value="{{ old('bulan') }}" required>
             @error('bulan')
@@ -51,7 +40,7 @@
         </div>
 
         {{-- Pilih Periode --}}
-        <div class="mb-3">
+        <div class="mb-3 col-md-6">
             <label for="periode" class="form-label">Periode Gaji</label>
             <select id="periode" name="periode" class="form-select @error('periode') is-invalid @enderror" required>
                 <option value="1" {{ old('periode') == '1' ? 'selected' : '' }}>Periode 1 (Tanggal 1 - 15)</option>
@@ -63,9 +52,9 @@
         </div>
 
         {{-- Insentif --}}
-        <div class="mb-3">
+        <div class="mb-3 col-md-6">
             <label for="insentif" class="form-label">Insentif</label>
-            <input type="number" name="insentif" id="insentif" class="form-control @error('insentif') is-invalid @enderror" value="{{ old('insentif', 0) }}" min="0" required>
+            <input type="text" name="insentif" id="insentif" class="form-control @error('insentif') is-invalid @enderror" value="{{ old('insentif', 0) }}" min="0" required>
             @error('insentif')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -77,14 +66,14 @@
             <thead>
                 <tr>
                     <th>Izin</th>
-                    <th>Tanpa Keterangan</th>
+                    <th>Tidak Hadir</th>
                     <th>Jumlah Pengurangan (Rp)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td id="izin">{{ isset($jumlahIzin) ? $jumlahIzin : 0 }}</td>
-                    <td id="tanpa_keterangan">{{ isset($jumlahTanpaKeterangan) ? $jumlahTanpaKeterangan : 0 }}</td>
+                    <td id="tidak_hadir">{{ isset($jumlahTidakHadir) ? $jumlahTidakHadir : 0 }}</td>
                     <td id="pengurangan">{{ isset($potongan) ? number_format($potongan, 0, ',', '.') : 0 }}</td>
                 </tr>
             </tbody>
@@ -106,7 +95,7 @@
             <p style="margin: 0; font-family: 'Times New Roman', Times, serif;">Telp (0711) 313414/310562 Fax (0711) 312226</p>
             <hr style="border: 1px solid black; margin-top: 8px;">
         </div>
-        <!-- Judul Slip Gaji -->
+     
         <h3 style="margin-top: 10px; font-weight: bold; text-align: left;">
             SLIP GAJI PEGAWAI
         </h3>
@@ -143,7 +132,7 @@
                 </tr>
                 <tr>
                     <td>Tanpa Keterangan</td>
-                    <td>{{ $jumlahTanpaKeterangan }} x Rp 30.000</td>
+                    <td>{{ $jumlahTidakHadir }} x Rp 30.000</td>
                 </tr>
                 <tr>
                     <td class="text-end"><strong>Total Pengurangan</strong></td>
@@ -158,13 +147,13 @@
 
         <div style="text-align: right; margin-top: 50px;">
             <p>Palembang, {{ date('d F Y') }}</p>
-            <!-- <br><br> -->
+    
             <p style="margin-bottom: 0;"><strong>Pegawai yang bersangkutan, </strong></p>
             <p style="margin-top: 60px;"><strong>______________________</strong></p>
         </div>
     </div>
 
-     <!-- Button to Print -->
+  
         <button onclick="printSlip()" class="btn btn-success mt-3">Cetak Slip Gaji</button>
 @endisset
 
@@ -183,22 +172,23 @@
 </form>
 @endif
 
-
 <script>
-    // Update nilai Gaji Pokok otomatis saat pegawai dipilih
-    document.getElementById('pegawai').addEventListener('change', function() {
-        const gaji = this.options[this.selectedIndex].getAttribute('data-gaji') || 0;
-        document.getElementById('gaji_pokok').value = gaji;
+    function formatRupiah(angka) {
+        return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
 
-        // Reset data absensi dan potongan saat ganti pegawai
-        document.getElementById('izin').innerText = '0';
-        document.getElementById('tanpa_keterangan').innerText = '0';
-        document.getElementById('pengurangan').innerText = '0';
+    document.getElementById('pegawai').addEventListener('change', function () {
+    const gaji = this.options[this.selectedIndex].getAttribute('data-gaji') || 0;
+    document.getElementById('gaji_pokok').value = formatRupiah(gaji);
+
+    document.getElementById('izin').innerText = '0';
+    document.getElementById('tidak_hadir').innerText = '0';
+    document.getElementById('pengurangan').innerText = '0';
+    
     });
 
-    // Jika sudah ada data hasil hitung dari server, set gaji pokoknya juga
     @isset($pegawai)
-        document.getElementById('gaji_pokok').value = {{ $pegawai->gaji }};
+        document.getElementById('gaji_pokok').value = formatRupiah({{ $pegawai->gaji }});
     @endisset
 </script>
 
@@ -221,26 +211,26 @@
                 },
                 success: function(response) {
                     $('#izin').text(response.izin);
-                    $('#tanpa_keterangan').text(response.tanpa_keterangan);
+                    $('#tidak_hadir').text(response.tidak_hadir);
                     $('#pengurangan').text(response.potongan.toLocaleString('id-ID'));
                 },
                 error: function() {
                     $('#izin').text('0');
-                    $('#tanpa_keterangan').text('0');
+                    $('#tidak_hadir').text('0');
                     $('#pengurangan').text('0');
                 }
             });
         } else {
             $('#izin').text('0');
-            $('#tanpa_keterangan').text('0');
+            $('#tidak_hadir').text('0');
             $('#pengurangan').text('0');
         }
     }
 
-    // Panggil fetchAbsensi setiap ada perubahan
+    
     $('#pegawai, #periode, #bulan').on('change', fetchAbsensi);
 
-    // Jika sudah ada pegawai terpilih saat halaman load (misal pas update form), fetch data juga
+    
     $(document).ready(function() {
         fetchAbsensi();
     });
@@ -248,13 +238,11 @@
 
 <script>
     function printSlip() {
-    // Pastikan hanya elemen slip gaji yang dicetak
     var printContent = document.getElementById("slip-gaji-content");  // Get content to print
     
-    // Debugging: Periksa apakah konten tersedia
     if (!printContent) {
         console.log('Slip gaji content tidak ditemukan');
-        return;  // Jika tidak ditemukan, hentikan fungsi
+        return; 
     }
 
     var printWindow = window.open('', '', 'height=600,width=800');
@@ -264,16 +252,32 @@
     printWindow.document.write('table, th, td { border: 1px solid black; padding: 8px; text-align: left; }</style>');
     printWindow.document.write('</head><body>');
     
-    // Debugging: Cek isi konten sebelum diprint
     console.log(printContent.outerHTML);
     
-    printWindow.document.write(printContent.outerHTML);  // Hanya cetak konten slip gaji
+    printWindow.document.write(printContent.outerHTML);  
     printWindow.document.write('</body></html>');
     
-    printWindow.document.close();  // Menutup jendela untuk menerapkan perubahan
-    printWindow.print();  // Membuka dialog print
+    printWindow.document.close();  
+    printWindow.print();  
 }
 
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const insentifInput = document.getElementById('insentif');
+
+        insentifInput.addEventListener('input', function (e) {
+            let value = e.target.value;
+            value = value.replace(/\./g, '');
+            if (!/^\d*$/.test(value)) {
+                value = value.replace(/[^\d]/g, '');
+            }
+            const formatted = new Intl.NumberFormat('id-ID').format(value);
+            e.target.value = formatted;
+        });
+    });
+</script>
+
 
 @endsection

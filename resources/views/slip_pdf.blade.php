@@ -98,8 +98,8 @@
                 <td>{{ $jumlahIzin }} x Rp 30.000</td>
             </tr>
             <tr>
-                <td>Tanpa Keterangan</td>
-                <td>{{ $jumlahTanpaKeterangan }} x Rp 30.000</td>
+                <td>Tidak Hadir</td>
+                <td>{{ $jumlahTidakHadir }} x Rp 30.000</td>
             </tr>
             <tr>
                 <td class="text-end"><strong>Total Pengurangan</strong></td>

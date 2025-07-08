@@ -11,7 +11,7 @@ class Absensi extends Model
 
     protected $fillable = [
         'pegawai_id',
-        'pegawai_name',      // Jika kamu simpan nama di tabel absensi, kalau nggak bisa dihapus
+        'pegawai_name',      
         'status',
         'attendance_photo',
         'attendance_time',

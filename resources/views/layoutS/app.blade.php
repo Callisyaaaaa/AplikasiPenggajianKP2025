@@ -23,8 +23,8 @@
             padding: 15px 20px;
             position: fixed;
             top: 0;
-            left: 250px; /* <- agar tidak menutupi sidebar */
-            width: calc(100% - 250px); /* <- lebar sisanya */
+            left: 250px; 
+            width: calc(100% - 250px); 
             height: 70px;
             z-index: 1000;
         }
@@ -119,7 +119,7 @@
             </li>
             <li class="nav-item">
                 <a href="{{ url('/pegawai') }}" class="nav-link {{ request()->is('pegawai') ? 'active' : '' }}">
-                    <i class="fa fa-user"></i> Kelola Pegawai
+                    <i class="fa fa-user"></i> Input Pegawai
                 </a>
             </li>
             <li class="nav-item">
@@ -130,33 +130,12 @@
         </ul>
     </div>
 
-    <!-- Content -->
+    
    <div class="content" id="main-content">
         @yield('content')
     </div>
 
-    <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-    const toggleBtn = document.getElementById('toggleSidebar');
-    const sidebar = document.getElementById('sidebar');
-    const content = document.getElementById('main-content');
-    const header = document.querySelector('.header');
-
-    toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('closed');
-
-        if (sidebar.classList.contains('closed')) {
-            content.style.marginLeft = '0';
-            header.style.paddingLeft = '20px'; // sidebar ditutup
-        } else {
-            content.style.marginLeft = '250px';
-            header.style.paddingLeft = '270px'; // sidebar dibuka
-        }
-    });
-    </script>
-
 
 </body>
 

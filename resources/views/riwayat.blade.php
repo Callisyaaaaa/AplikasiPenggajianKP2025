@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Ganti dengan layout utama jika beda --}}
+@extends('layouts.app') 
 
 @section('title', 'Riwayat Penggajian')
 
@@ -38,7 +38,10 @@
                 <td>{{ $riwayat->pegawai->name }}</td>
                 <td>{{ \Carbon\Carbon::parse($riwayat->tanggal_gaji)->translatedFormat('F Y') }}</td>
                 <td>
-                    <a href="{{ route('riwayat.download', $riwayat->id) }}" class="btn btn-sm btn-danger">Download PDF</a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('riwayat.preview', $riwayat->id) }}" class="btn btn-sm btn-secondary" target="_blank">View</a>
+                        <a href="{{ route('riwayat.download', $riwayat->id) }}" class="btn btn-sm btn-danger">Download PDF</a>
+                    </div>
                 </td>
             </tr>
         @endforeach

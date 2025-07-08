@@ -45,8 +45,8 @@ class AuthenticatedSessionController extends Controller
 
         // Jika login gagal, kembali dengan error
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
+            'login' => 'Maaf, email atau password yang Anda masukkan tidak tepat.',
+                ]);
     }
 
     // Logout

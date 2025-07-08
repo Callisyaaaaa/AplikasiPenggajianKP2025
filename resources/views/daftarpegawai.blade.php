@@ -20,7 +20,7 @@
                     <th>Nomor Telepon</th>
                     <th>Jabatan</th>
                     <th>Gaji Pokok</th>
-                    <th>Aksi</th>  <!-- Kolom Aksi untuk edit dan hapus -->
+                    <th>Aksi</th> 
                 </tr>
             </thead>
             <tbody>
@@ -61,7 +61,12 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="nomor" class="form-label">Nomor Telepon</label>
-                                                    <input type="text" class="form-control" id="nomor" name="nomor" value="{{ $pegawai->nomor }}">
+                                                    <input type="text" class="form-control" id="nomor" name="nomor"
+                                                        value="{{ $pegawai->nomor }}"
+                                                        pattern="\d*"
+                                                        inputmode="numeric"
+                                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                                        maxlength="15" required>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="jabatan" class="form-label">Jabatan</label>
@@ -69,7 +74,12 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="gaji" class="form-label">Gaji Pokok</label>
-                                                    <input type="number" class="form-control" id="gaji" name="gaji" value="{{ $pegawai->gaji }}">
+                                                    <input type="text" class="form-control" id="gaji" name="gaji"
+                                                        value="{{ $pegawai->gaji }}"
+                                                        pattern="\d*"
+                                                        inputmode="numeric"
+                                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                                        required>
                                                 </div>
                                                 <button type="submit" class="btn btn-primary">Update Pegawai</button>
                                             </form>
@@ -108,6 +118,5 @@
         </table>
     </div>
 
-    <!-- Include Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 @endsection

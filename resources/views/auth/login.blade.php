@@ -3,7 +3,7 @@
 @section('content')
     <div class="container">
         <div class="login-container">
-            <h2 class="text-center mb-4">Login</h2>
+            <h2 class="text-center mb-4">LOGIN</h2>
             <form method="POST" action="{{ route('login') }}">
                 @csrf
 
@@ -17,12 +17,17 @@
                     <input type="password" name="password" id="password" class="form-control" required>
                 </div>
 
-                <div class="mb-3 form-check">
-                    <input type="checkbox" name="remember" id="remember" class="form-check-input">
-                    <label for="remember" class="form-check-label">Remember Me</label>
-                </div>
+               <button type="submit" class="btn w-100 text-white" style="background-color: #001f3f; border-color: #001f3f;">
+                    Login
+                </button>
 
-                <button type="submit" class="btn btn-primary w-100">Login</button>
+
+                @if ($errors->has('login'))
+                    <div class="alert alert-danger">
+                        {{ $errors->first('login') }}
+                    </div>
+                @endif
+
 
                 <div class="mt-3 text-center">
                     @if (Route::has('password.request'))

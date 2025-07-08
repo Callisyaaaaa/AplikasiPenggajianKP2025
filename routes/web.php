@@ -22,18 +22,17 @@ Route::get('/absensi', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/pegawai', [PegawaiController::class, 'index'])->name('pegawai.index');
     Route::get('/daftar-pegawai', [PegawaiController::class, 'showAll'])->name('pegawai.showAll'); 
+    Route::delete('/pegawai/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
     Route::get('/pegawai/{id}/edit', [PegawaiController::class, 'edit'])->name('pegawai.edit');
-    Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
+    Route::get('/absensi', [AbsensiController::class, 'create'])->name('absensi.index');
+    Route::get('/api/pegawai-belum-digaji', [PenggajianController::class, 'getPegawaiBelumDigaji'])->name('api.pegawai.belumdigaji');
     Route::get('/penggajian', [PenggajianController::class, 'index'])->name('gaji.index');
     Route::get('/riwayat-gaji', [PenggajianController::class, 'riwayat'])->name('gaji.riwayat');
+    Route::get('/riwayat/{id}/preview', [PenggajianController::class, 'previewSlip'])->name('riwayat.preview');
     Route::get('/riwayat-gaji/download/{id}', [PenggajianController::class, 'downloadFromRiwayat'])->name('riwayat.download');
     Route::get('/riwayat-absensi', [AbsensiController::class, 'riwayat'])->name('absensi.riwayat');
     Route::get('/riwayat-absensi/download', [AbsensiController::class, 'downloadPdf'])->name('absensi.riwayat.download');    // Tambahkan route lain yang ingin kamu proteksi
 });
-
-
-// Menampilkan form kelola pegawai
-Route::get('/pegawai', [PegawaiController::class, 'index'])->name('pegawai.index'); // Menggunakan controller untuk index
 
 // Menyimpan pegawai
 Route::post('/pegawai', [PegawaiController::class, 'store'])->name('pegawai.store');
@@ -48,16 +47,10 @@ Route::get('/pegawai/{id}/edit', [PegawaiController::class, 'edit'])->name('pega
 Route::put('/pegawai/{id}', [PegawaiController::class, 'update'])->name('pegawai.update');
 
 // Route untuk hapus pegawai
-Route::delete('/pegawai/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
 
 
 Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index'); // Menampilkan form absensi
 Route::post('/absensi', [AbsensiController::class, 'store'])->name('absensi.store'); // Menyimpan data absensi
-
-
-// Route::get('/penggajian', [PenggajianController::class, 'index'])->name('penggajian.index');
-// Route::post('/penggajian/hitung', [PenggajianController::class, 'hitungGaji'])->name('penggajian.hitung');
-// Route::get('/penggajian/slip/{id}', [PenggajianController::class, 'slipGaji'])->name('penggajian.slip');
 
 Route::get('/penggajian', [PenggajianController::class, 'index'])->name('gaji.index');
 Route::post('/penggajian/hitung', [PenggajianController::class, 'hitungGaji'])->name('gaji.hitung');
@@ -73,16 +66,3 @@ Route::get('/riwayat-gaji/download/{id}', [PenggajianController::class, 'downloa
 Route::get('/riwayat-absensi', [AbsensiController::class, 'riwayat'])->name('absensi.riwayat');
 Route::get('/riwayat-absensi/download', [AbsensiController::class, 'downloadPdf'])->name('absensi.riwayat.download');
 
-Route::get('/test-gd', function () {
-    if (!extension_loaded('gd')) {
-        return 'GD NOT LOADED';
-    }
-
-    $im = imagecreatetruecolor(100, 100);
-    $bg = imagecolorallocate($im, 0, 100, 255);
-    imagefill($im, 0, 0, $bg);
-
-    header('Content-Type: image/png');
-    imagepng($im);
-    imagedestroy($im);
-});

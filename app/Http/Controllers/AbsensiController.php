@@ -14,8 +14,18 @@ class AbsensiController extends Controller
     // Menampilkan halaman absensi
     public function index()
     {
-        $pegawaiList = Pegawai::all(); // Ambil semua data pegawai
-        return view('absensi', compact('pegawaiList')); // Kirim data pegawai ke view
+        // $pegawaiList = Pegawai::all(); // Ambil semua data pegawai
+        // return view('absensi', compact('pegawaiList'));
+        $today = Carbon::today()->toDateString();
+
+        $sudahAbsenIds = Absensi::whereDate('attendance_time', $today)->pluck('pegawai_id');
+
+        $pegawaiBelumAbsen = Pegawai::whereNotIn('id', $sudahAbsenIds)->get();
+
+        return view('absensi', [
+            'pegawaiList' => Pegawai::all(),
+            'pegawaiBelumAbsen' => $pegawaiBelumAbsen,
+        ]); // Kirim data pegawai ke view
     }
 
     // Menyimpan data absensi
@@ -24,7 +34,7 @@ class AbsensiController extends Controller
         // Validasi input
         $request->validate([
             'employee_id' => 'required|exists:pegawais,id',
-            'status' => 'required|in:Hadir,Izin,Tanpa Keterangan',
+            'status' => 'required|in:Hadir,Izin,Tidak Hadir',
             'attendance_photo' => 'nullable|string', // Validasi base64 string
             'attendance_time' => 'required|date',
         ]);
@@ -82,7 +92,47 @@ class AbsensiController extends Controller
 
     $absensis = $query->orderBy('attendance_time', 'desc')->get();
 
-    return view('riwayat-absensi', compact('absensis'));
+    // ========== Rekap Per Pegawai ==========
+    $rekapPegawai = [];
+
+    foreach ($absensis as $absen) {
+        $nama = $absen->pegawai->name;
+        $tanggal = \Carbon\Carbon::parse($absen->attendance_time)->format('d-m-Y');
+
+        if (!isset($rekapPegawai[$nama])) {
+            $rekapPegawai[$nama] = [
+                'nama' => $nama,
+                'hadir' => 0,
+                'izin' => 0,
+                'tidak_hadir' => 0,
+                'tanggal' => [
+                    'Hadir' => [],
+                    'Izin' => [],
+                    'Tidak Hadir' => [],
+                ]
+            ];
+        }
+
+        switch ($absen->status) {
+            case 'Hadir':
+                $rekapPegawai[$nama]['hadir']++;
+                $rekapPegawai[$nama]['tanggal']['Hadir'][] = $tanggal;
+                break;
+            case 'Izin':
+                $rekapPegawai[$nama]['izin']++;
+                $rekapPegawai[$nama]['tanggal']['Izin'][] = $tanggal;
+                break;
+            case 'Tidak Hadir':
+                $rekapPegawai[$nama]['tidak_hadir']++;
+                $rekapPegawai[$nama]['tanggal']['Tidak Hadir'][] = $tanggal;
+                break;
+        }
+    }
+
+    $absensis = $query->orderBy('attendance_time', 'desc')->get();
+    $rekapPegawai = array_values($rekapPegawai);
+
+    return view('riwayat-absensi', compact('absensis', 'rekapPegawai'));
 }
 
     public function downloadPDF(Request $request)
@@ -110,5 +160,5 @@ class AbsensiController extends Controller
     ]);
 
     return $pdf->download('Riwayat_Absensi.pdf');
-}
+    }
 }

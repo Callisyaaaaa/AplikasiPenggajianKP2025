@@ -13,7 +13,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PenggajianController extends Controller
 {
-    // Menampilkan form penggajian
     public function index()
     {
         $pegawaiList = Pegawai::all();
@@ -45,16 +44,16 @@ class PenggajianController extends Controller
             ->whereBetween('attendance_time', [$startDate, $endDate])
             ->count();
 
-        $jumlahTanpaKeterangan = Absensi::where('pegawai_id', $pegawaiId)
-            ->where('status', 'Tanpa Keterangan')
+        $jumlahTidakHadir = Absensi::where('pegawai_id', $pegawaiId)
+            ->where('status', operator: 'Tidak Hadir')
             ->whereBetween('attendance_time', [$startDate, $endDate])
             ->count();
 
-        $potongan = ($jumlahIzin + $jumlahTanpaKeterangan) * 30000;
+        $potongan = ($jumlahIzin + $jumlahTidakHadir) * 30000;
 
         return response()->json([
             'izin' => $jumlahIzin,
-            'tanpa_keterangan' => $jumlahTanpaKeterangan,
+            'tidak_hadir' => $jumlahTidakHadir,
             'potongan' => $potongan,
         ]);
     }
@@ -85,20 +84,20 @@ class PenggajianController extends Controller
             ->whereBetween('attendance_time', [$startDate, $endDate])
             ->count();
 
-        $jumlahTanpaKeterangan = Absensi::where('pegawai_id', $pegawai->id)
-            ->where('status', 'Tanpa Keterangan')
+        $jumlahTidakHadir = Absensi::where('pegawai_id', $pegawai->id)
+            ->where('status', 'Tidak Hadir')
             ->whereBetween('attendance_time', [$startDate, $endDate])
             ->count();
 
         $gajiPokok = $pegawai->gaji;
         $insentif = $request->insentif;
-        $totalPengurangan = ($jumlahIzin + $jumlahTanpaKeterangan) * 30000;
+        $totalPengurangan = ($jumlahIzin + $jumlahTidakHadir) * 30000;
         $totalGaji = $gajiPokok - $totalPengurangan + $insentif;
 
         RiwayatGaji::create([
         'pegawai_id' => $pegawai->id,
         'periode' => $periode,
-        'tanggal' => now(), // Atau bisa pakai Carbon::createFromFormat('Y-m', $bulanTahun)
+        'tanggal' => now(), 
         'gaji_pokok' => $gajiPokok,
         'insentif' => $insentif,
         'potongan' => $totalPengurangan,
@@ -112,7 +111,7 @@ class PenggajianController extends Controller
         'pegawai',
         'periode',
         'jumlahIzin',
-        'jumlahTanpaKeterangan',
+        'jumlahTidakHadir',
         'gajiPokok',
         'insentif',
         'totalPengurangan',
@@ -134,14 +133,12 @@ class PenggajianController extends Controller
         'total_gaji' => 'required|integer',
     ]);
 
-    // Simpan PDF slip gaji
     $pegawai = Pegawai::find($data['pegawai_id']);
     $pdf = Pdf::loadView('slipgaji', compact('pegawai', 'data'));
 
     $pdfName = 'slipgaji_' . $pegawai->id . '_' . now()->format('YmHis') . '.pdf';
     Storage::put("public/slipgaji/$pdfName", $pdf->output());
 
-    // Simpan ke riwayat
     RiwayatGaji::create([
         'pegawai_id' => $data['pegawai_id'],
         'periode' => $data['periode'],
@@ -160,21 +157,17 @@ class PenggajianController extends Controller
     {
     $query = RiwayatGaji::with('pegawai');
 
-    // Filter nama pegawai
     if ($request->filled('nama')) {
         $query->whereHas('pegawai', function ($q) use ($request) {
             $q->where('name', 'like', '%' . $request->nama . '%');
         });
     }
-
-    // Filter bulan dan tahun
     if ($request->filled('bulan')) {
         $tanggal = \Carbon\Carbon::parse($request->bulan);
         $query->whereMonth('tanggal', $tanggal->month)
               ->whereYear('tanggal', $tanggal->year);
     }
 
-    // Ambil data hasil filter
     $riwayat = $query->orderBy('created_at', 'desc')->get();
 
     return view('riwayat', compact('riwayat'));
@@ -201,7 +194,7 @@ class PenggajianController extends Controller
         'gajiPokok' => $request->gaji_pokok,
         'insentif' => $request->insentif,
         'jumlahIzin' => (int)($request->jumlah_izin ?? 0),
-        'jumlahTanpaKeterangan' => (int)($request->jumlah_tanpa_keterangan ?? 0),
+        'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
         'totalPengurangan' => $request->potongan,
         'totalGaji' => $request->total_gaji,
     ];
@@ -221,7 +214,7 @@ class PenggajianController extends Controller
         'gajiPokok' => $riwayat->gaji_pokok,
         'insentif' => $riwayat->insentif,
         'jumlahIzin' => $riwayat->jumlah_izin,
-        'jumlahTanpaKeterangan' => $riwayat->jumlah_tanpa_keterangan,
+        'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
         'totalPengurangan' => $riwayat->total_pengurangan,
         'totalGaji' => $riwayat->total_gaji,
     ];
@@ -230,6 +223,21 @@ class PenggajianController extends Controller
 
     return $pdf->download('SlipGaji_' . $riwayat->pegawai->name . '_' . \Carbon\Carbon::parse($riwayat->tanggal_gaji)->format('Ym') . '.pdf');
     }
+    public function previewSlip($id)
+    {
+    $riwayat = RiwayatGaji::with('pegawai')->findOrFail($id);
 
+    return view('slip_web', [
+        'pegawai' => $riwayat->pegawai,
+        'periode' => $riwayat->periode,
+        'bulanTahun' => $riwayat->tanggal,
+        'gajiPokok' => $riwayat->gaji_pokok,
+        'insentif' => $riwayat->insentif,
+        'jumlahIzin' => $riwayat->jumlah_izin ?? 0,
+        'jumlahTidakHadir' => $riwayat->jumlah_tidak_hadir ?? 0,
+        'totalPengurangan' => $riwayat->potongan ?? 0,
+        'totalGaji' => $riwayat->total_gaji,
+    ]);
+    }
 
 }
