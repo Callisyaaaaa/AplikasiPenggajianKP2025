@@ -21,13 +21,14 @@ Route::get('/absensi', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/pegawai', [PegawaiController::class, 'index'])->name('pegawai.index');
-    Route::get('/daftar-pegawai', [PegawaiController::class, 'showAll'])->name('pegawai.showAll'); 
+    Route::get('/daftar-pegawai', [PegawaiController::class, 'showAll'])->name('pegawai.showAll');
     Route::delete('/pegawai/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
     Route::get('/pegawai/{id}/edit', [PegawaiController::class, 'edit'])->name('pegawai.edit');
     Route::get('/absensi', [AbsensiController::class, 'create'])->name('absensi.index');
     Route::get('/api/pegawai-belum-digaji', [PenggajianController::class, 'getPegawaiBelumDigaji'])->name('api.pegawai.belumdigaji');
     Route::get('/penggajian', [PenggajianController::class, 'index'])->name('gaji.index');
     Route::get('/riwayat-gaji', [PenggajianController::class, 'riwayat'])->name('gaji.riwayat');
+    Route::get('/validasi-gaji/{id}', [PenggajianController::class, 'validasi']);
     Route::get('/riwayat/{id}/preview', [PenggajianController::class, 'previewSlip'])->name('riwayat.preview');
     Route::get('/riwayat-gaji/download/{id}', [PenggajianController::class, 'downloadFromRiwayat'])->name('riwayat.download');
     Route::get('/riwayat-absensi', [AbsensiController::class, 'riwayat'])->name('absensi.riwayat');
@@ -36,7 +37,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Menyimpan pegawai
 Route::post('/pegawai', [PegawaiController::class, 'store'])->name('pegawai.store');
-
+ 
 // Menampilkan daftar pegawai
 Route::get('/daftar-pegawai', [PegawaiController::class, 'showAll'])->name('pegawai.showAll'); // Untuk menampilkan semua pegawai
 
@@ -65,4 +66,3 @@ Route::get('/riwayat-gaji/download/{id}', [PenggajianController::class, 'downloa
 
 Route::get('/riwayat-absensi', [AbsensiController::class, 'riwayat'])->name('absensi.riwayat');
 Route::get('/riwayat-absensi/download', [AbsensiController::class, 'downloadPdf'])->name('absensi.riwayat.download');
-

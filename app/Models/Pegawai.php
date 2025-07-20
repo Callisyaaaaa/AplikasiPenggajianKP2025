@@ -7,14 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pegawai extends Model
 {
-    use HasFactory; 
+    use HasFactory;
 
     protected $fillable = [
-        'id','name', 'alamat', 'nomor', 'jabatan', 'gaji',
+        'id',
+        'iduser',
+        'name',
+        'alamat',
+        'nomor',
+        'jabatan',
+        'gaji',
+        'status_pegawai',
+        'status_menikah',
+        'nik',
+        'pendidikan',
     ];
 
     public function absensis()
     {
-    return $this->hasMany(Absensi::class);
+        return $this->hasMany(Absensi::class);
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class);
     }
 }

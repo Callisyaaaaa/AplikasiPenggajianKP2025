@@ -9,7 +9,7 @@ use App\Models\RiwayatGaji;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+use Illuminate\Support\Facades\Auth;
 
 class PenggajianController extends Controller
 {
@@ -58,13 +58,20 @@ class PenggajianController extends Controller
         ]);
     }
 
-   public function hitungGaji(Request $request)
+    public function hitungGaji(Request $request)
     {
+        $request->merge([
+            'insentif' => str_replace('.', '', $request->insentif),
+            'potongan_pajak' => str_replace(',', '.', $request->potongan_pajak), // misal 5,5 jadi 5.5
+        ]);
+
+
         $request->validate([
             'pegawai_id' => 'required|exists:pegawais,id',
             'periode' => 'required|in:1,2',
             'insentif' => 'required|integer|min:0',
             'bulan' => 'required|date_format:Y-m',
+            'potongan_pajak' => 'nullable|numeric|min:0|max:100', // persen 0 - 100
         ]);
 
         $pegawai = Pegawai::findOrFail($request->pegawai_id);
@@ -91,153 +98,187 @@ class PenggajianController extends Controller
 
         $gajiPokok = $pegawai->gaji;
         $insentif = $request->insentif;
-        $totalPengurangan = ($jumlahIzin + $jumlahTidakHadir) * 30000;
-        $totalGaji = $gajiPokok - $totalPengurangan + $insentif;
+        $potonganPajakPersen = $request->potongan_pajak ?? 0;
 
+        $totalPengurangan = ($jumlahIzin + $jumlahTidakHadir) * 30000;
+        $potonganBPJS = $gajiPokok * 0.005;
+        $potonganPajak = $gajiPokok * ($potonganPajakPersen / 100);
+
+        $totalPotongan = $totalPengurangan + $potonganBPJS + $potonganPajak;
+
+        $totalGaji = $gajiPokok - $totalPotongan + $insentif;
+
+        // Simpan ke database
         RiwayatGaji::create([
-        'pegawai_id' => $pegawai->id,
-        'periode' => $periode,
-        'tanggal' => now(), 
-        'gaji_pokok' => $gajiPokok,
-        'insentif' => $insentif,
-        'potongan' => $totalPengurangan,
-        'total_gaji' => $totalGaji,
+            'pegawai_id'   => $pegawai->id,
+            'periode'      => $periode,
+            'tanggal'      => now(),
+            'gaji_pokok'   => $gajiPokok,
+            'insentif'     => $insentif,
+            'potongan'     => $totalPotongan,
+            'total_gaji'   => $totalGaji,
+            'bpjs'         => $potonganBPJS,
+            'potonganpajak'        => $potonganPajakPersen,
+            'potonganpajaknilai'        => $potonganPajak,
         ]);
 
         $pegawaiList = Pegawai::all();
 
         return view('penggajian', compact(
-        'pegawaiList',
-        'pegawai',
-        'periode',
-        'jumlahIzin',
-        'jumlahTidakHadir',
-        'gajiPokok',
-        'insentif',
-        'totalPengurangan',
-        'totalGaji',
-        'bulanTahun'
-    ))->with('pegawaiId', $request->pegawai_id);
-
+            'pegawaiList',
+            'pegawai',
+            'periode',
+            'jumlahIzin',
+            'jumlahTidakHadir',
+            'gajiPokok',
+            'insentif',
+            'totalPengurangan',
+            'potonganBPJS',
+            'potonganPajak',
+            'potonganPajakPersen',
+            'totalPotongan',
+            'totalGaji',
+            'bulanTahun'
+        ))->with('pegawaiId', $request->pegawai_id);
     }
-    
+
     public function selesaikanPenggajian(Request $request)
     {
-    $data = $request->validate([
-        'pegawai_id' => 'required|exists:pegawais,id',
-        'periode' => 'required|in:1,2',
-        'bulan' => 'required|date_format:Y-m',
-        'gaji_pokok' => 'required|integer',
-        'insentif' => 'required|integer',
-        'potongan' => 'required|integer',
-        'total_gaji' => 'required|integer',
-    ]);
+        $data = $request->validate([
+            'pegawai_id' => 'required|exists:pegawais,id',
+            'periode' => 'required|in:1,2',
+            'bulan' => 'required|date_format:Y-m',
+            'gaji_pokok' => 'required|integer',
+            'insentif' => 'required|integer',
+            'potongan' => 'required|integer',
+            'total_gaji' => 'required|integer',
+        ]);
 
-    $pegawai = Pegawai::find($data['pegawai_id']);
-    $pdf = Pdf::loadView('slipgaji', compact('pegawai', 'data'));
+        $pegawai = Pegawai::find($data['pegawai_id']);
+        $pdf = Pdf::loadView('slipgaji', compact('pegawai', 'data'));
 
-    $pdfName = 'slipgaji_' . $pegawai->id . '_' . now()->format('YmHis') . '.pdf';
-    Storage::put("public/slipgaji/$pdfName", $pdf->output());
+        $pdfName = 'slipgaji_' . $pegawai->id . '_' . now()->format('YmHis') . '.pdf';
+        Storage::put("public/slipgaji/$pdfName", $pdf->output());
 
-    RiwayatGaji::create([
-        'pegawai_id' => $data['pegawai_id'],
-        'periode' => $data['periode'],
-        'tanggal' => now(),
-        'gaji_pokok' => $data['gaji_pokok'],
-        'insentif' => $data['insentif'],
-        'potongan' => $data['potongan'],
-        'total_gaji' => $data['total_gaji'],
-        'pdf_path' => "storage/slipgaji/$pdfName",
-    ]);
+        RiwayatGaji::create([
+            'pegawai_id' => $data['pegawai_id'],
+            'periode' => $data['periode'],
+            'tanggal' => now(),
+            'gaji_pokok' => $data['gaji_pokok'],
+            'insentif' => $data['insentif'],
+            'potongan' => $data['potongan'],
+            'total_gaji' => $data['total_gaji'],
+            'pdf_path' => "storage/slipgaji/$pdfName",
+        ]);
 
-    return redirect()->route('riwayat-gaji')->with('success', 'Penggajian diselesaikan!');
+        return redirect()->route('riwayat-gaji')->with('success', 'Penggajian diselesaikan!');
     }
 
     public function riwayat(Request $request)
     {
-    $query = RiwayatGaji::with('pegawai');
+        $query = RiwayatGaji::with('pegawai');
 
-    if ($request->filled('nama')) {
-        $query->whereHas('pegawai', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->nama . '%');
-        });
-    }
-    if ($request->filled('bulan')) {
-        $tanggal = \Carbon\Carbon::parse($request->bulan);
-        $query->whereMonth('tanggal', $tanggal->month)
-              ->whereYear('tanggal', $tanggal->year);
-    }
+        if ($request->filled('nama')) {
+            $query->whereHas('pegawai', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->nama . '%');
+            });
+        }
+        if ($request->filled('bulan')) {
+            $tanggal = \Carbon\Carbon::parse($request->bulan);
+            $query->whereMonth('tanggal', $tanggal->month)
+                ->whereYear('tanggal', $tanggal->year);
+        }
 
-    $riwayat = $query->orderBy('created_at', 'desc')->get();
+        if (Auth::user()->role === 'Admin' || Auth::user()->role === 'Pimpinan') {
+            $data['riwayat'] = $query->orderBy('created_at', 'desc')->get();
+        } else {
+            $pegawai = Pegawai::where('iduser', Auth::user()->id)->first();
+            $data['riwayat'] = $query->orderBy('created_at', 'desc')->where('pegawai_id', $pegawai->id)->where('status', 'Tervalidasi')->get();
+            $data['namapegawai'] = $pegawai->name;
+        }
 
-    return view('riwayat', compact('riwayat'));
+        return view('riwayat', $data);
     }
 
 
     public function generateSlipGaji($id)
     {
-    $riwayat = \App\Models\RiwayatGaji::with('pegawai')->findOrFail($id);
+        $riwayat = \App\Models\RiwayatGaji::with('pegawai')->findOrFail($id);
 
-    $pdf = Pdf::loadView('slipgaji', compact('riwayat'));
+        $pdf = Pdf::loadView('slipgaji', compact('riwayat'));
 
-    return $pdf->download('SlipGaji_'.$riwayat->pegawai->nama.'_'.date('F_Y', strtotime($riwayat->tanggal)).'.pdf');
+        return $pdf->download('SlipGaji_' . $riwayat->pegawai->nama . '_' . date('F_Y', strtotime($riwayat->tanggal)) . '.pdf');
     }
 
     public function downloadSlip(Request $request)
     {
-    $pegawai = Pegawai::findOrFail($request->pegawai_id);
+        $pegawai = Pegawai::findOrFail($request->pegawai_id);
 
-    $data = [
-        'pegawai' => $pegawai,
-        'periode' => $request->periode,
-        'bulanTahun' => $request->bulan,
-        'gajiPokok' => $request->gaji_pokok,
-        'insentif' => $request->insentif,
-        'jumlahIzin' => (int)($request->jumlah_izin ?? 0),
-        'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
-        'totalPengurangan' => $request->potongan,
-        'totalGaji' => $request->total_gaji,
-    ];
+        $data = [
+            'pegawai' => $pegawai,
+            'periode' => $request->periode,
+            'bulanTahun' => $request->bulan, 
+            'gajiPokok' => $request->gaji_pokok,
+            'insentif' => $request->insentif,
+            'jumlahIzin' => (int)($request->jumlah_izin ?? 0),
+            'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
+            'totalPengurangan' => $request->potongan,
+            'totalGaji' => $request->total_gaji,
+        ];
 
-    $pdf = Pdf::loadView('slip_pdf', $data);
-    return $pdf->download('SlipGaji_' . $pegawai->name . '_' . now()->format('Ym') . '.pdf');
+        $pdf = Pdf::loadView('slip_pdf', $data);
+        return $pdf->download('SlipGaji_' . $pegawai->name . '_' . now()->format('Ym') . '.pdf');
     }
 
     public function downloadFromRiwayat($id)
     {
-    $riwayat = RiwayatGaji::with('pegawai')->findOrFail($id);
+        $riwayat = RiwayatGaji::with('pegawai')->findOrFail($id);
 
-    $data = [
-        'pegawai' => $riwayat->pegawai,
-        'periode' => $riwayat->periode,
-        'bulanTahun' => $riwayat->tanggal,
-        'gajiPokok' => $riwayat->gaji_pokok,
-        'insentif' => $riwayat->insentif,
-        'jumlahIzin' => $riwayat->jumlah_izin,
-        'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
-        'totalPengurangan' => $riwayat->total_pengurangan,
-        'totalGaji' => $riwayat->total_gaji,
-    ];
+        $data = [
+            'pegawai' => $riwayat->pegawai,
+            'periode' => $riwayat->periode,
+            'bulanTahun' => $riwayat->tanggal,
+            'gajiPokok' => $riwayat->gaji_pokok,
+            'insentif' => $riwayat->insentif,
+            'jumlahIzin' => $riwayat->jumlah_izin,
+            'jumlahTidakHadir' => (int)($request->jumlah_Tidak_Hadir ?? 0),
+            'totalPengurangan' => $riwayat->potongan,
+            'totalGaji' => $riwayat->total_gaji,
+            'bpjs' => $riwayat->bpjs,
+            'potonganpajak' => $riwayat->potonganpajak,
+            'potonganpajaknilai' => $riwayat->potonganpajaknilai,
+        ];
 
-    $pdf = Pdf::loadView('slip_pdf', $data);
+        $pdf = Pdf::loadView('slip_pdf', $data);
 
-    return $pdf->download('SlipGaji_' . $riwayat->pegawai->name . '_' . \Carbon\Carbon::parse($riwayat->tanggal_gaji)->format('Ym') . '.pdf');
+        return $pdf->download('SlipGaji_' . $riwayat->pegawai->name . '_' . \Carbon\Carbon::parse($riwayat->tanggal_gaji)->format('Ym') . '.pdf');
     }
     public function previewSlip($id)
     {
-    $riwayat = RiwayatGaji::with('pegawai')->findOrFail($id);
+        $riwayat = RiwayatGaji::with('pegawai')->findOrFail($id);
 
-    return view('slip_web', [
-        'pegawai' => $riwayat->pegawai,
-        'periode' => $riwayat->periode,
-        'bulanTahun' => $riwayat->tanggal,
-        'gajiPokok' => $riwayat->gaji_pokok,
-        'insentif' => $riwayat->insentif,
-        'jumlahIzin' => $riwayat->jumlah_izin ?? 0,
-        'jumlahTidakHadir' => $riwayat->jumlah_tidak_hadir ?? 0,
-        'totalPengurangan' => $riwayat->potongan ?? 0,
-        'totalGaji' => $riwayat->total_gaji,
-    ]);
+        return view('slip_web', [
+            'pegawai' => $riwayat->pegawai,
+            'periode' => $riwayat->periode,
+            'bulanTahun' => $riwayat->tanggal,
+            'gajiPokok' => $riwayat->gaji_pokok,
+            'insentif' => $riwayat->insentif,
+            'jumlahIzin' => $riwayat->jumlah_izin ?? 0,
+            'jumlahTidakHadir' => $riwayat->jumlah_tidak_hadir ?? 0,
+            'totalPengurangan' => $riwayat->potongan ?? 0,
+            'totalGaji' => $riwayat->total_gaji,
+            'bpjs' => $riwayat->bpjs,
+            'potonganpajak' => $riwayat->potonganpajak,
+            'potonganpajaknilai' => $riwayat->potonganpajaknilai,
+        ]);
     }
 
+    public function validasi($id)
+    {
+        RiwayatGaji::where('id', $id)->update([
+            'status' => 'Tervalidasi'
+        ]);
+
+        return back()->with('success', 'Penggajian berhasil diselesaikan!');
+    }
 }

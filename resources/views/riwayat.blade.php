@@ -1,4 +1,4 @@
-@extends('layouts.app') 
+@extends('layouts.app')
 
 @section('title', 'Riwayat Penggajian')
 
@@ -8,9 +8,17 @@
 
     {{-- Filter Form --}}
     <form method="GET" action="{{ route('gaji.riwayat') }}" class="row mb-4">
+        @if (auth()->user()->role === 'Admin' || auth()->user()->role === 'Pimpinan')
         <div class="col-md-3">
-            <input type="text" name="nama" class="form-control" placeholder="Nama Pegawai" value="{{ request('nama') }}">
+            <input type="text" name="nama" class="form-control" placeholder="Nama Pegawai"
+                value="{{ request('nama') }}">
         </div>
+        @endif
+        @if (auth()->user()->role === 'Pegawai')
+        <div class="col-md-3 d-none">
+            <input type="text" name="nama" class="form-control" placeholder="Nama Pegawai" value="{{ $namapegawai }}">
+        </div>
+        @endif
         <div class="col-md-2">
             <input type="month" name="bulan" class="form-control" value="{{ request('bulan') }}">
         </div>
@@ -25,27 +33,38 @@
     @else
     {{-- Riwayat List --}}
     <table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Nama Pegawai</th>
-            <th>Periode Gaji</th>
-            <th>Slip Gaji</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach ($riwayat as $riwayat)
+        <thead>
+            <tr>
+                <th>Nama Pegawai</th>
+                <th>Periode Gaji</th>
+                <th>Status</th>
+                <th>Slip Gaji</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($riwayat as $riwayat)
             <tr>
                 <td>{{ $riwayat->pegawai->name }}</td>
                 <td>{{ \Carbon\Carbon::parse($riwayat->tanggal_gaji)->translatedFormat('F Y') }}</td>
+                <td>{{ $riwayat->status }}</td>
                 <td>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('riwayat.preview', $riwayat->id) }}" class="btn btn-sm btn-secondary" target="_blank">View</a>
-                        <a href="{{ route('riwayat.download', $riwayat->id) }}" class="btn btn-sm btn-danger">Download PDF</a>
+                        @if (auth()->user()->role == 'Pimpinan')
+                        @if ($riwayat->status == 'Menunggu Validasi')
+                        <a href="{{ url('validasi-gaji/' . $riwayat->id) }}" class="btn btn-sm btn-primary">Validasi</a>
+                        @endif
+                        @endif
+                        @if ($riwayat->status == 'Tervalidasi')
+                        <a href="{{ route('riwayat.download', $riwayat->id) }}" class="btn btn-sm btn-danger">Download
+                            PDF</a>
+                        @endif
+                        <a href="{{ route('riwayat.preview', $riwayat->id) }}" class="btn btn-sm btn-secondary"
+                            target="_blank">View</a>
                     </div>
                 </td>
             </tr>
-        @endforeach
-    </tbody>
+            @endforeach
+        </tbody>
     </table>
     @endif
 </div>

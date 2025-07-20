@@ -20,7 +20,7 @@ class AuthenticatedSessionController extends Controller
     public function store(Request $request)
     {
         // Validasi email dan password
-        $request->validate([
+        $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
@@ -38,15 +38,23 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Verifikasi login
-        if (Auth::attempt($request->only('email', 'password'))) {
+        if (Auth::attempt($credentials)) {
             // Jika login berhasil, arahkan ke dashboard
-            return redirect()->route('absensi.index');
+
+            if (Auth::user()->role === 'Pegawai') {
+                return redirect()->route('absensi.riwayat');
+            }
+            if (Auth::user()->role === 'Pimpinan') {
+                return redirect()->route('gaji.riwayat');
+            } else {
+                return redirect()->route('absensi.index');
+            }
         }
 
         // Jika login gagal, kembali dengan error
         return back()->withErrors([
             'login' => 'Maaf, email atau password yang Anda masukkan tidak tepat.',
-                ]);
+        ]);
     }
 
     // Logout

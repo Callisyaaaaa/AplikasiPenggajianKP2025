@@ -18,6 +18,10 @@ class RiwayatGaji extends Model
         'potongan',
         'total_gaji',
         'pdf_path',
+        'status',
+        'bpjs',
+        'potonganpajak',
+        'potonganpajaknilai',
     ];
 
     public function pegawai()

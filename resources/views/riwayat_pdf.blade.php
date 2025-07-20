@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Slip Gaji</title>
@@ -16,7 +17,9 @@
             margin-top: 10px;
         }
 
-        table, th, td {
+        table,
+        th,
+        td {
             border: 1px solid black;
             padding: 8px;
         }
@@ -56,6 +59,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>PT. Sarina Indika Makmur</h1>
@@ -66,12 +70,18 @@
     </div>
     <h3 style="margin-top: 10px;">RIWAYAT ABSENSI PEGAWAI</h3>
 
-     @if ($nama || $bulan)
+    @if ($nama || $bulan)
         <p style="text-align: left;">
             Filter By:
-            @if ($nama) '{{ strtoupper($nama) }}'@endif
-            @if ($nama && $bulan) & @endif
-            @if ($bulan) '{{ \Carbon\Carbon::parse($bulan)->translatedFormat('F Y') }}'@endif
+            @if ($nama)
+                '{{ strtoupper($nama) }}'
+            @endif
+            @if ($nama && $bulan)
+                &
+            @endif
+            @if ($bulan)
+                '{{ \Carbon\Carbon::parse($bulan)->translatedFormat('F Y') }}'
+            @endif
         </p>
     @endif
     <table>
@@ -95,4 +105,5 @@
         </tbody>
     </table>
 </body>
+
 </html>
