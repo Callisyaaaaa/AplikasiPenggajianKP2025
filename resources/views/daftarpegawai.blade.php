@@ -19,6 +19,7 @@
                     <th>Nama</th>
                     <th>Alamat</th>
                     <th>Nomor Telepon</th>
+                    <th>Email</th>
                     <th>Jabatan</th>
                     <th>Pendidikan Terakhir</th>
                     <th>Status Pegawai</th>
@@ -28,12 +29,13 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($pegawaiList as $pegawai)
+                @foreach ($pegawaiList as $pegawai)            
                     <tr>
                         <td>{{ $pegawai->nik }}</td>
                         <td>{{ $pegawai->name }}</td>
                         <td>{{ $pegawai->alamat }}</td>
                         <td>{{ $pegawai->nomor }}</td>
+                        <td>{{ $pegawai->user->email ?? '-' }}</td>
                         <td>{{ $pegawai->jabatan }}</td>
                         <td>{{ $pegawai->pendidikan }}</td>
                         <td>{{ $pegawai->status_pegawai }}</td>
